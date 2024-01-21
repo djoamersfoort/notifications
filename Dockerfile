@@ -1,11 +1,11 @@
 FROM python:3.11-slim
 
+COPY app/requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
+
 RUN useradd -m -U -d /app notifications
 USER notifications
 WORKDIR /app
-
-COPY app/requirements.txt /app/requirements.txt
-RUN pip install --no-cache-dir -r /app/requirements.txt
 
 COPY app /app
 
