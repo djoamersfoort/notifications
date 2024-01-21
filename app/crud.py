@@ -35,7 +35,7 @@ def create_announcement(db: Session, announcement: schemas.AnnouncementCreate):
         "to": tokens,
         "title": announcement.title,
         "body": announcement.description
-    })
+    }, timeout=10)
     return db_announcement
 
 
