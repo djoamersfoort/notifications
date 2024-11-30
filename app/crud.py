@@ -17,6 +17,7 @@ def get_user(db: Session, user: str):
 
 
 def create_announcement(db: Session, announcement: schemas.AnnouncementCreate):
+    print(f"Sending notification {announcement.title} to {len(announcement.recipients)} users")
     recipients = []
     tokens = []
     for recipient in announcement.recipients:
@@ -25,17 +26,22 @@ def create_announcement(db: Session, announcement: schemas.AnnouncementCreate):
         for token in user.tokens:
             tokens.append(token.token)
 
+    print(f"Found {len(recipients)} registered users and {len(tokens)} relevant tokens")
     db_announcement = models.Announcement(title=announcement.title, description=announcement.description,
                                           content=announcement.content, recipients=recipients)
     db.add(db_announcement)
     db.commit()
     db.refresh(db_announcement)
 
-    requests.post("https://api.expo.dev/v2/push/send", json={
-        "to": tokens,
-        "title": announcement.title,
-        "body": announcement.description
-    }, timeout=10)
+    for token in tokens:
+        result = requests.post("https://exp.host/--/api/v2/push/send", json={
+            "to": token,
+            "title": announcement.title,
+            "body": announcement.description
+        }, timeout=10)
+        if result.status_code != 200:
+            print(f"Oeps, er ging iets mis {result.content}")
+
     return db_announcement
 
 
