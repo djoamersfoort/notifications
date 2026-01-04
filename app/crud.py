@@ -41,7 +41,7 @@ async def create_announcement(db: AsyncSession, announcement: schemas.Announceme
             "to": token,
             "title": announcement.title,
             "body": announcement.description
-        }, timeout=10)
+        })
         if result.is_error:
             print(f"Oeps, er ging iets mis {result.content}")
 
