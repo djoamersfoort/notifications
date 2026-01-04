@@ -1,14 +1,19 @@
 import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 import models
 import schemas
 
 
 async def get_user(db: AsyncSession, user: str) -> models.User:
-    results = await db.execute(select(models.User).filter(models.User.id == user))
-    db_user = results.first()
+    results = await db.execute(
+        select(models.User)
+        .where(models.User.id == user)
+        .options(selectinload(models.User.announcements))
+    )
+    db_user = results.scalar_one_or_none()
     if db_user is None:
         db_user = models.User(id=user)
         db.add(db_user)
@@ -55,8 +60,10 @@ async def get_announcements(db: AsyncSession, user: str) -> list[models.Announce
 
 async def create_token(db: AsyncSession, user: str, token: str) -> models.NotificationToken:
     user = await get_user(db, user)
-    results = await db.execute(select(models.NotificationToken).filter(models.NotificationToken.token == token))
-    db_token: models.NotificationToken | None = results.first()
+    results = await db.execute(
+        select(models.NotificationToken).where(models.NotificationToken.token == token)
+    )
+    db_token: models.NotificationToken | None = results.scalar_one_or_none()
     if db_token is not None:
         db_token.user = user
         await db.commit()
