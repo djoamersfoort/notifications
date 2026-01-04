@@ -1,27 +1,29 @@
-import requests
-from sqlalchemy.orm import Session
+import httpx
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 import models
 import schemas
 
 
-def get_user(db: Session, user: str):
-    db_user = db.query(models.User).filter(models.User.id == user).first()
+async def get_user(db: AsyncSession, user: str) -> models.User:
+    results = await db.execute(select(models.User).filter(models.User.id == user))
+    db_user = results.first()
     if db_user is None:
         db_user = models.User(id=user)
         db.add(db_user)
-        db.commit()
-        db.refresh(db_user)
+        await db.commit()
+        await db.refresh(db_user)
 
     return db_user
 
 
-def create_announcement(db: Session, announcement: schemas.AnnouncementCreate):
+async def create_announcement(db: AsyncSession, announcement: schemas.AnnouncementCreate) -> models.Announcement:
     print(f"Sending notification {announcement.title} to {len(announcement.recipients)} users")
     recipients = []
     tokens = []
     for recipient in announcement.recipients:
-        user = get_user(db, recipient)
+        user = await get_user(db, recipient)
         recipients.append(user)
         for token in user.tokens:
             tokens.append(token.token)
@@ -30,35 +32,38 @@ def create_announcement(db: Session, announcement: schemas.AnnouncementCreate):
     db_announcement = models.Announcement(title=announcement.title, description=announcement.description,
                                           content=announcement.content, recipients=recipients)
     db.add(db_announcement)
-    db.commit()
-    db.refresh(db_announcement)
+    await db.commit()
+    await db.refresh(db_announcement)
 
+    http = httpx.AsyncClient(timeout=10)
     for token in tokens:
-        result = requests.post("https://exp.host/--/api/v2/push/send", json={
+        result = await http.post("https://exp.host/--/api/v2/push/send", json={
             "to": token,
             "title": announcement.title,
             "body": announcement.description
-        }, timeout=10)
-        if result.status_code != 200:
+        })
+        if result.is_error:
             print(f"Oeps, er ging iets mis {result.content}")
 
     return db_announcement
 
 
-def get_announcements(db: Session, user: str):
-    return get_user(db, user).announcements
+async def get_announcements(db: AsyncSession, user: str) -> list[models.Announcement]:
+    user = await get_user(db, user)
+    return user.announcements
 
 
-def create_token(db: Session, user: str, token: str):
-    user = get_user(db, user)
-    db_token = db.query(models.NotificationToken).filter(models.NotificationToken.token == token).first()
+async def create_token(db: AsyncSession, user: str, token: str) -> models.NotificationToken:
+    user = await get_user(db, user)
+    results = await db.execute(select(models.NotificationToken).filter(models.NotificationToken.token == token))
+    db_token: models.NotificationToken | None = results.first()
     if db_token is not None:
         db_token.user = user
-        db.commit()
+        await db.commit()
         return db_token
 
     db_token = models.NotificationToken(user=user, token=token)
     db.add(db_token)
-    db.commit()
-    db.refresh(db_token)
+    await db.commit()
+    await db.refresh(db_token)
     return db_token
