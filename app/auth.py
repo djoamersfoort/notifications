@@ -2,7 +2,7 @@ from functools import lru_cache
 from typing import Annotated
 
 import jwt
-import requests
+import httpx
 from fastapi import Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
@@ -11,7 +11,7 @@ from conf import settings
 
 @lru_cache()
 def get_openid_configuration():
-    return requests.get(
+    return httpx.get(
         settings.openid_configuration, timeout=10
     ).json()
 
