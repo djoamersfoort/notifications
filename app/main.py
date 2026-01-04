@@ -25,9 +25,9 @@ async def create_announcement(announcement: schemas.AnnouncementCreate, db: Asyn
 
 @app.get("/public/announcements", response_model=list[schemas.AnnouncementList])
 async def get_announcements(db: AsyncSession = Depends(get_db), user: str = Depends(get_user)):
-    return await crud.get_announcements(db=db, user=user)
+    return await crud.get_announcements(db=db, user_id=user)
 
 
 @app.post("/public/token", response_model=schemas.NotificationToken)
 async def create_token(token: schemas.NotificationToken, db: AsyncSession = Depends(get_db), user: str = Depends(get_user)):
-    return await crud.create_token(db=db, token=token.token, user=user)
+    return await crud.create_token(db=db, token=token.token, user_id=user)

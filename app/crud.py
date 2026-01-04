@@ -75,8 +75,8 @@ async def get_announcements(db: AsyncSession, user_id: str) -> Sequence[models.A
     )
     return result.scalars().all()
 
-async def create_token(db: AsyncSession, user: str, token: str) -> models.NotificationToken:
-    user = await get_user(db, user)
+async def create_token(db: AsyncSession, user_id: str, token: str) -> models.NotificationToken:
+    user = await get_user(db, user_id)
     results = await db.execute(
         select(models.NotificationToken).where(models.NotificationToken.token == token)
     )
