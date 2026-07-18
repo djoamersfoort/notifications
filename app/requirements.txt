@@ -2,7 +2,7 @@ httpx~=0.28.1
 PyJWT~=2.10.1
 fastapi~=0.135.1
 SQLAlchemy[asyncio]~=2.0.46
-uvicorn~=0.40.0
+uvicorn~=0.51.0
 pydantic-settings~=2.13.1
 cryptography~=46.0.5
 aiosqlite
